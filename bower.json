@@ -1,0 +1,38 @@
+{
+  "name": "authonic",
+  "main": "auth.js",
+  "version": "0.0.0",
+  "homepage": "https://github.com/markusila/firebaseAuthStarter",
+  "description": "Email/Socials auth plugin powerd by Firebase (ready to be used on any stage of development)",
+  "keywords": [
+    "auth",
+    "ionic",
+    "firebase",
+    "authorize",
+    "authorisation",
+    "simple",
+    "login",
+    "ionic",
+    "login",
+    "ionic",
+    "firebase",
+    "firebase",
+    "login",
+    "socials",
+    "login",
+    "account",
+    "for",
+    "app",
+    "login",
+    "for",
+    "app",
+    "login",
+    "plugin",
+    "simple",
+    "plugin"
+  ],
+  "authors": [
+    "Mark Okhman"
+  ],
+  "license": "MIT"
+}

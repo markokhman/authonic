@@ -1,0 +1,68 @@
+<ion-modal-view ng-controller="LoginCtrl">
+  <ion-header-bar>
+    <h1 class="title">Log in</h1>
+    <div class="buttons">
+      <button class="button button-clear" ng-click="hideLoginPopup()">Close</button>
+    </div>
+  </ion-header-bar>
+  <ion-content>
+      <div class="card" ng-show="message" style="position: absolute; z-index: 1000; bottom: 0;">
+        <div style="background-color: #E0D140;" class="item item-text-wrap">
+          {{message}}
+        </div>
+      </div>
+      <div class="email" ng-show="email">
+        <div class="list" ng-hide="signup">
+          <label class="item item-input item-stacked-label">
+            <span class="input-label">Email</span>
+            <br>
+            <span class="input-label" style="color:red;" ng-show="emptyemail"> Please enter email</span>
+            <input type="text" ng-model="credentials.email" placeholder="example@email.com">
+          </label>
+          <label class="item item-input item-stacked-label">
+            <span class="input-label">Password</span>
+            <input type="password" ng-model="credentials.password" placeholder="********">
+          </label>
+          <label class="item">
+            <button ng-click="loginEmail(credentials)" class="button button-block button-positive">Log in</button>
+          </label>
+          <button ng-hide="signup" ng-click="signup=true" class="button button-clear button-positive"  style="margin:auto !important; display:block !important;">Create an account?</button>
+          <button ng-hide="signup" ng-click="restorePassword(credentials)" class="button button-clear button-positive" style="margin:auto; display:block;">Restore password</button>
+        </div>
+        <div class="list" ng-show="signup">
+          <label class="item item-input item-stacked-label">
+            <span class="input-label">Email</span>
+            <br>
+            <input type="text" ng-model="registerCredentials.email" placeholder="example@email.com">
+          </label>
+          <label class="item item-input item-stacked-label">
+            <span class="input-label">Password</span>
+            <input type="password" ng-model="registerCredentials.password" placeholder="********">
+          </label>
+          <label ng-show="signup" class="item item-input item-stacked-label">
+            <span class="input-label">Confirm password</span>
+            <br>
+            <input ng-model="registerCredentials.repassword" type="password">
+          </label>
+          <label class="item">
+            <button ng-click="registerEmail(registerCredentials)" class="button button-block button-positive">Sign up</button>
+          </label>
+          <button ng-show="signup" ng-click="signup=false" class="button button-clear button-assertive" style="margin:auto; display:block;">Cancel</button>
+        </div>
+      </div>
+      <div class="list">
+        <div class="item">
+          <button class="button button-block button-stable" ng-click="email=true" ng-hide="email">
+            Log in with Email
+          </button>
+          <button class="button button-block button-positive" ng-click="loginFacebook()">
+            Log in with Facebook
+          </button>
+          <button class="button button-block button-assertive" ng-click="loginGoogle()">
+            Log in with Google
+          </button>
+        </div>
+      </div>
+
+  </ion-content>
+</ion-modal-view>
