@@ -23,7 +23,7 @@ angular.module('auth', [])
 })
 
 // SERVICES
-.factory('AuthService', function ($http, Session, INFO, $q, $ionicModal, $rootScope, AUTH_EVENTS) {
+.factory('AuthService', function ($http, Session, INFO, $q, $ionicModal, $rootScope, AUTH_EVENTS, $http, $ionicPlatform) {
   var authService = {}
  
   // 1 GROUP PUBLIC METHOD
@@ -177,32 +177,78 @@ angular.module('auth', [])
 
   authService.loginFacebook = function () {
     return $q(function (resolve, reject) {
-      var ref = new Firebase(INFO.firebaseURL);  
-      ref.authWithOAuthPopup("facebook", function (error, authData) {
-        if (error) {
-          resolve({ 
-            success : false,
-            data : error.message 
-          });
-        } else {
-          ref.child('users').child(authData.uid).once('value', function (snapshot) {
-            if (snapshot.val()) {
-              Session.create(snapshot.val());
-              resolve({ 
-                success : true,
-                data : "Successfully logged in" 
-              });
-            } else {
-              var userData = {
-                uid : authData.uid,
-                access_token : authData[authData.provider].accessToken,
-                provider : authData.provider,
-                email : authData[authData.provider].email,
-                displayName : authData[authData.provider].displayName,
-                profileImageURL : authData[authData.provider].profileImageURL
+      var ref = new Firebase(INFO.firebaseURL); 
+
+      var loginWithWebView = function () {
+        ref.authWithOAuthPopup("facebook", function (error, authData) {
+          if (error) {
+            resolve({ 
+              success : false,
+              data : error.message 
+            });
+          } else {
+            ref.child('users').child(authData.uid).once('value', function (snapshot) {
+              if (snapshot.val()) {
+                Session.create(snapshot.val());
+                resolve({ 
+                  success : true,
+                  data : "Successfully logged in" 
+                });
+              } else {
+                var userData = {
+                  uid : authData.uid,
+                  access_token : authData[authData.provider].accessToken,
+                  provider : authData.provider,
+                  email : authData[authData.provider].email,
+                  displayName : authData[authData.provider].displayName,
+                  profileImageURL : authData[authData.provider].profileImageURL
+                }
+                Session.create(userData);
+                ref.child('users').child(authData.uid).set(userData, function (error) {
+                  if (!error) {
+                    resolve({ 
+                      success : true,
+                      data : "Successfully saved User data" 
+                    });
+                  } else {
+                    resolve({ 
+                      success : false,
+                      data : "Could not save User data" 
+                    });
+                    console.log(error);
+                  }
+                });
               }
+            });
+          }
+        });
+      } 
+
+      // Try login with native app
+      if (window.plugins) {
+        var fbLoginSuccess = function (userData) {
+            console.log(userData);
+            var access_token = userData.authResponse.accessToken;
+            var url = '/me/?fields=about,name,picture,email';
+            facebookConnectPlugin.api(
+                url,
+                ['public_profile','email'],
+            function (response) {
+             // SUccess function
+              if (!response.email) {
+                response.email = "none";
+              };
+              var userData = {
+                uid : "facebooknative:"+response.id,
+                access_token : access_token,
+                provider : "facebooknative",
+                email : response.email,
+                displayName : response.name,
+                profileImageURL : response.picture.data.url
+              }
+              console.log(userData)
               Session.create(userData);
-              ref.child('users').child(authData.uid).set(userData, function (error) {
+              ref.child('users').child(response.id).set(userData, function (error) {
                 if (!error) {
                   resolve({ 
                     success : true,
@@ -216,61 +262,148 @@ angular.module('auth', [])
                   console.log(error);
                 }
               });
-            }
-          });
+            },
+            function (error) { console.error(error); }
+            );
         }
-      });
+
+        facebookConnectPlugin.login(["public_profile","email"],
+            fbLoginSuccess,
+            function (error) { 
+              console.log(error);
+              loginWithWebView(); 
+            }
+        );
+      } else {
+        loginWithWebView();
+      }
     });
   }
 
   authService.loginGoogle = function () {
     return $q(function (resolve, reject) {
-      var ref = new Firebase(INFO.firebaseURL);  
-      ref.authWithOAuthPopup("google", function (error, authData) {
-        if (error) {
-          resolve({ 
-            success : false,
-            data : error.message 
-          });
-        } else {
-          console.log(authData)
-          ref.child('users').child(authData.uid).once('value', function (snapshot) {
-            if (snapshot.val()) {
-              Session.create(snapshot.val());
+      var ref = new Firebase(INFO.firebaseURL);
+
+      var loginWithWebView = function () {
+        ref.authWithOAuthPopup("google", function (error, authData) {
+          if (error) {
+            resolve({ 
+              success : false,
+              data : error.message 
+            });
+          } else {
+            console.log(authData)
+            ref.child('users').child(authData.uid).once('value', function (snapshot) {
+              if (snapshot.val()) {
+                Session.create(snapshot.val());
+                resolve({ 
+                  success : true,
+                  data : "Successfully logged in" 
+                });
+              } else {
+                var userData = {
+                  uid : authData.uid,
+                  email : authData[authData.provider].cachedUserProfile.email,
+                  access_token : authData[authData.provider].accessToken,
+                  provider : authData.provider,
+                  displayName : authData[authData.provider].displayName,
+                  profileImageURL : authData[authData.provider].profileImageURL
+                }
+                Session.create(userData);
+                ref.child('users').child(authData.uid).set(userData, function (error) {
+                  if (!error) {
+                    resolve({ 
+                      success : true,
+                      data : "Successfully saved User data" 
+                    });
+                  } else {
+                    resolve({ 
+                      success : false,
+                      data : "Could not save User data" 
+                    });
+                    console.log(error);
+                  }
+                });
+              }
+            });
+          }
+        }, {
+          scope: "email"
+        });
+      } 
+
+      var loginWithNativeApp = function () {
+        window.plugins.googleplus.login({
+          // 'scopes': '... ', // optional space-separated list of scopes, the default is sufficient for login and basic profile info
+          'offline': true // optional and required for Android only - if set to true the plugin will also return the OAuth access token, that can be used to sign in to some third party services that don't accept a Cross-client identity token (ex. Firebase)
+          // 'webApiKey': 'api of web app', // optional API key of your Web application from Credentials settings of your project - if you set it the returned idToken will allow sign in to services like Azure Mobile Services
+          // there is no API key for Android; you app is wired to the Google+ API by listing your package name in the google dev console and signing your apk (which you have done in chapter 4)
+        },
+        function (obj) {
+          console.log(obj);
+          var email = obj.email;
+          var term=null;
+          var access_token = obj.oauthToken;
+          // changed_access_token = access_token.replace('.','_');
+          // console.log(changed_access_token)
+          $http.get('https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token='+access_token).
+            then(function(response) {
+              console.log(response);
+              
+              var userData = {
+                  uid : "googlenative:"+response.data.id,
+                  email : email,
+                  access_token : access_token,
+                  provider : "googlenative",
+                  displayName : response.data.name,
+                  profileImageURL : response.data.picture
+                }
+                console.log(userData)
+                Session.create(userData);
+                ref.child('users').child("googlenative:"+response.data.id).set(userData, function (error) {
+                  if (!error) {
+                    resolve({ 
+                      success : true,
+                      data : "Successfully saved User data" 
+                    });
+                  } else {
+                    resolve({ 
+                      success : false,
+                      data : "Could not save User data" 
+                    });
+                    console.log(error);
+                  }
+                });
+
               resolve({ 
                 success : true,
                 data : "Successfully logged in" 
               });
-            } else {
-              var userData = {
-                uid : authData.uid,
-                email : authData[authData.provider].cachedUserProfile.email,
-                access_token : authData[authData.provider].accessToken,
-                provider : authData.provider,
-                displayName : authData[authData.provider].displayName,
-                profileImageURL : authData[authData.provider].profileImageURL
-              }
-              Session.create(userData);
-              ref.child('users').child(authData.uid).set(userData, function (error) {
-                if (!error) {
-                  resolve({ 
-                    success : true,
-                    data : "Successfully saved User data" 
-                  });
-                } else {
-                  resolve({ 
-                    success : false,
-                    data : "Could not save User data" 
-                  });
-                  console.log(error);
-                }
-              });
-            }
-          });
-        }
-      }, {
-        scope: "email"
-      });
+
+            }, function(response) {
+              console.log(response)
+              // called asynchronously if an error occurs
+              // or server returns response with an error status.
+            });
+          },
+          function (msg) {
+            loginWithWebView();
+          }
+        );
+      } 
+
+      // Try login with native app
+      if (window.plugins && window.plugins.googleplus) {
+        window.plugins.googleplus.isAvailable(function (available) {
+          if (available) {
+            loginWithNativeApp();
+          } else {
+            loginWithWebView();
+          }
+        });
+      } else {
+        loginWithWebView();
+      }
     });
   }
 
@@ -342,6 +475,30 @@ angular.module('auth', [])
       var ref = new Firebase(INFO.firebaseURL);
       ref.unauth();
       Session.destroy();
+      // If there is Google native app - forget user and account
+      if (window.plugins && window.plugins.googleplus) {
+        window.plugins.googleplus.isAvailable(function (available) {
+          if (available) {
+            window.plugins.googleplus.logout(
+                function (msg) {
+                  console.log(msg); // do something useful instead of alerting
+                  window.plugins.googleplus.disconnect(
+                      function (msg) {
+                        console.log(msg); // do something useful instead of alerting
+                      }
+                  );
+                }
+            );
+          }
+        });
+      }
+      if (window.plugins) {
+        facebookConnectPlugin.logout(function (success) {
+          console.log(success)
+        }, function (error) {
+          console.log(error)
+        });
+      }
       $rootScope.$broadcast(AUTH_EVENTS.logoutSuccess);
   }
 
@@ -360,7 +517,7 @@ angular.module('auth', [])
 })
 
 // CONTROLLERS
-.controller('LoginCtrl', function ($scope, $rootScope, AUTH_EVENTS, Session, AuthService, $timeout, $ionicLoading) {
+.controller('LoginCtrl', function ($scope, $rootScope, AUTH_EVENTS, Session, AuthService, $timeout, $ionicLoading, $http) {
   $scope.credentials = {
     email: '',
     password: ''
@@ -382,13 +539,14 @@ angular.module('auth', [])
         $ionicLoading.hide();
         AuthService.hideLoginPopup()
       } else {
+        $ionicLoading.hide();
         $scope.message = result.data;
         $timeout(function() {
           $scope.message = null;
         }, 3000);
         $rootScope.$broadcast(AUTH_EVENTS.loginFailed);
       }
-    })
+    });
   }
   $scope.loginGoogle = function () {
     $ionicLoading.show();
@@ -398,13 +556,14 @@ angular.module('auth', [])
         $ionicLoading.hide();
         AuthService.hideLoginPopup()
       } else {
+        $ionicLoading.hide();
         $scope.message = result.data;
         $timeout(function() {
           $scope.message = null;
         }, 3000);
         $rootScope.$broadcast(AUTH_EVENTS.loginFailed);
       }
-    })
+    });
   }
 
   $scope.loginEmail = function (credentials) {
