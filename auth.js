@@ -28,7 +28,7 @@ angular.module('auth', [])
  
   // 1 GROUP PUBLIC METHOD
   authService.showLoginPopup = function () {
-    $ionicModal.fromTemplateUrl('auth/login.html').then(function(modal) {
+    $ionicModal.fromTemplateUrl('lib/authonic/login.html').then(function(modal) {
       authService.loginModal = modal;
       authService.loginModal.show();
     });
@@ -42,7 +42,7 @@ angular.module('auth', [])
   // 1 GROUP PUBLIC METHOD
   authService.showProfilePopup = function () {
     if (authService.isAuthenticated()) {
-      $ionicModal.fromTemplateUrl('auth/profile.html').then(function(modal) {
+      $ionicModal.fromTemplateUrl('lib/authonic/profile.html').then(function(modal) {
         authService.profileModal = modal;
         authService.profileModal.show();
       });
