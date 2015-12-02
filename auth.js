@@ -199,9 +199,11 @@ angular.module('auth', [])
                   uid : authData.uid,
                   access_token : authData[authData.provider].accessToken,
                   provider : authData.provider,
-                  email : authData[authData.provider].email,
                   displayName : authData[authData.provider].displayName,
                   profileImageURL : authData[authData.provider].profileImageURL
+                }
+                if (authData[authData.provider].email) {
+                  userData.email = authData[authData.provider].email;
                 }
                 Session.create(userData);
                 ref.child('users').child(authData.uid).set(userData, function (error) {
