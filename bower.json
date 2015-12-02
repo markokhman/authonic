@@ -1,7 +1,7 @@
 {
   "name": "authonic",
   "main": "auth.js",
-  "version": "0.0.0",
+  "version": "0.0.9",
   "homepage": "https://github.com/markusila/firebaseAuthStarter",
   "description": "Email/Socials auth plugin powerd by Firebase (ready to be used on any stage of development)",
   "keywords": [
